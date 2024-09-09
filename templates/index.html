@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Detection with Messages</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        #video {
+            display: block;
+            width: 640px;
+            height: 480px;
+            margin: 0 auto;
+            border: 2px solid black;
+        }
+        #canvas {
+            display: block;
+            width: 640px;
+            height: 480px;
+            margin: 0 auto;
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+        .container {
+            position: relative;
+            width: 640px;
+            height: 480px;
+            margin: 0 auto;
+        }
+        #messageOverlay {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <video id="video" autoplay></video>
+        <canvas id="canvas"></canvas>
+        <div id="messageOverlay"></div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        const messageOverlay = document.getElementById('messageOverlay');
+        const socket = io.connect('http://127.0.0.1:5000');  // Make sure the URL matches your Flask-SocketIO backend
+
+        // Request access to the webcam
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((stream) => {
+                video.srcObject = stream;
+            })
+            .catch((err) => {
+                console.error('Error accessing the camera: ', err);
+            });
+
+        // Set canvas size to match video frame size
+        video.addEventListener('loadedmetadata', () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+        });
+
+        // Capture video frame and send it to the server every 200ms
+        setInterval(() => {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const frame = canvas.toDataURL('image/jpeg').split(',')[1];  // Extract only the base64 data part
+            socket.emit('video_data', frame);  // Send the video frame to the server
+        }, 200);  // Capture every 200ms (5 frames per second)
+
+        // Receive messages from the server and display them in the overlay
+        socket.on('message', (data) => {
+            messageOverlay.textContent = data.text;
+        });
+
+        // Receive face detection results and draw a bounding box on the canvas
+        socket.on('result', (data) => {
+            context.clearRect(0, 0, canvas.width, canvas.height);  // Clear canvas before drawing
+            if (data.face) {
+                const { x, y, width, height } = data.face;
+                context.strokeStyle = 'red';
+                context.lineWidth = 2;
+                context.strokeRect(x, y, width, height);  // Draw bounding box around the face
+            }
+        });
+    </script>
+</body>
+</html>
