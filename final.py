@@ -88,7 +88,7 @@ def detect_emotion(video_frame, detection):
 def check_background_change(video_frame, reference_frame, threshold=30):
     diff = cv2.absdiff(video_frame, reference_frame)
     mean_diff = np.mean(diff)
-    emit('message', {'text': f"Background change mean difference: {mean_diff:.2f} (threshold: {threshold:.2f})"})
+    emit('message', {'text': f"stable background"})
     return mean_diff > threshold
 
 @socketio.on('video_data')
