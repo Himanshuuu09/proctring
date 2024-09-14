@@ -74,17 +74,13 @@ def detect_emotion(video_frame, detection):
         width = int(box.width * w)
         height = int(box.height * h)
         face_roi = video_frame[y:y + height, x:x + width]
-        # print(f"Face ROI shape: {face_roi.shape}")  # Check face_roi dimensions
         emotion_data = emotion_detector.detect_emotions(face_roi)
-        # print(emotion_data)  # Check emotion_data output
         if not emotion_data:
             emotion = "neutral"
             return emotion
         top_emotion = emotion_detector.top_emotion(face_roi)
-        # print(top_emotion)  # Check top_emotion output
         if top_emotion:
             emotion, score = top_emotion
-            # print("printing emotions", emotion)
             return emotion
     except Exception as e:
         return f"Error during emotion detection: {e}"
@@ -145,7 +141,7 @@ def handle_video_frame(data):
         if len(results.detections) == 1:
             face_match = compare_faces(reference_encoding, frame, results.detections[0], results_dict)
             if face_match is None:
-                results_dict['No_faces']=1 
+                results_dict['No_faces']=1  
             elif not face_match:
                 emit('message', {'text': "Face mismatch detected. Possible cheating!"})
                 results_dict['face_mismatch'] = 1
